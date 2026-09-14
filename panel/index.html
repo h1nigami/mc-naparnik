@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Напарники — центр обучения</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --panel: #ffffff; --ink: #16181d; --muted: #6b7280; --line: #e3e5ea;
+    --accent: #2f6fed; --accent-ink: #ffffff; --good: #16a34a; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+    --s1: #2f6fed; --s2: #16a34a; --s3: #d97706; --s4: #9333ea; --s5: #0891b2; --s6: #db2777; --s7: #65a30d; --s8: #ea580c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --panel: #171a21; --ink: #e6e8ee; --muted: #9aa3b2; --line: #262b35;
+      --accent: #5b8cff; --chip: #1e2533; --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 24px;
+           background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+  .pulse { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: var(--good); box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 25%, transparent); }
+  nav { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+  nav button { background: transparent; border: 0; color: var(--muted); padding: 8px 12px; border-radius: 8px;
+               font: inherit; font-weight: 550; cursor: pointer; }
+  nav button.active { background: var(--chip); color: var(--accent); }
+  main { padding: 20px 24px 60px; max-width: 1280px; margin: 0 auto; }
+  section[hidden] { display: none; }
+  .grid { display: grid; gap: 16px; }
+  .kpis { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); }
+  .card h2 { font-size: 13px; margin: 0 0 12px; font-weight: 650; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .kpi .v { font-size: 26px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .kpi .l { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .btn { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px; padding: 8px 14px;
+         font: inherit; font-weight: 600; cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn.danger { background: transparent; color: var(--bad); border: 1px solid color-mix(in srgb, var(--bad) 40%, var(--line)); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  input[type=number], input[type=text] { background: var(--bg); color: var(--ink); border: 1px solid var(--line);
+         border-radius: 8px; padding: 7px 9px; font: inherit; width: 100%; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--chip); color: var(--muted); }
+  .tag.run { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+  .tag.stale { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .muted { color: var(--muted); }
+  .chart { width: 100%; height: 260px; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .bots { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .bar { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 8px 0; }
+  .bar > span { display: block; height: 100%; background: var(--accent); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 10px; font-size: 12px; }
+  .stats b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .settings { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); align-items: start; }
+  .field { display: grid; grid-template-columns: 1fr 110px; gap: 4px 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .field:last-child { border-bottom: 0; }
+  .field .name { font-weight: 600; }
+  .field .hint { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .toggle:last-child { border-bottom: 0; }
+  .switch { position: relative; width: 40px; height: 22px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch span { position: absolute; inset: 0; background: var(--line); border-radius: 99px; transition: .15s; cursor: pointer; }
+  .switch span::before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .15s; }
+  .switch input:checked + span { background: var(--accent); }
+  .switch input:checked + span::before { transform: translateX(18px); }
+  .savebar { position: sticky; bottom: 0; margin-top: 16px; padding: 12px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+  #toast { position: fixed; right: 20px; bottom: 20px; max-width: 380px; padding: 12px 14px; border-radius: 10px;
+           background: var(--ink); color: var(--bg); box-shadow: 0 8px 24px rgba(0,0,0,.2); opacity: 0; transform: translateY(8px); transition: .2s; pointer-events: none; }
+  #toast.show { opacity: 1; transform: none; }
+  #toast.err { background: var(--bad); color: #fff; }
+  .empty { padding: 28px; text-align: center; color: var(--muted); }
+  .scroll { overflow-x: auto; }
+  @media (max-width: 640px) { header { flex-wrap: wrap; } main { padding: 16px; } .field { grid-template-columns: 1fr 90px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Напарники</h1>
+  <span class="pulse"><span class="dot" id="dotGame"></span><span id="lblGame">игра не на связи</span></span>
+  <span class="pulse"><span class="dot" id="dotIsl"></span><span id="lblIsl">острова стоят</span></span>
+  <nav>
+    <button data-tab="overview" class="active">Обзор</button>
+    <button data-tab="islands">Фоновое обучение</button>
+    <button data-tab="game">Игра</button>
+    <button data-tab="settings">Настройки</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ОБЗОР -->
+  <section id="overview" class="grid">
+    <div class="grid kpis">
+      <div class="card kpi"><div class="v" id="kOffline">—</div><div class="l">рекорд фонового обучения</div></div>
+      <div class="card kpi"><div class="v" id="kGame">—</div><div class="l">рекорд в игре</div></div>
+      <div class="card kpi"><div class="v" id="kIslands">0</div><div class="l">островов обучается</div></div>
+      <div class="card kpi"><div class="v" id="kLives">0</div><div class="l">жизней прожито в игре</div></div>
+      <div class="card kpi"><div class="v" id="kPromoted">—</div><div class="l">сейчас в игре мозг</div></div>
+    </div>
+    <div class="card">
+      <h2>Рекорд островов — как растёт со временем</h2>
+      <svg class="chart" id="chOverview"></svg>
+      <div class="legend" id="lgOverview"></div>
+    </div>
+    <div class="card">
+      <h2>Жизни в игре</h2>
+      <svg class="chart" id="chGameOverview"></svg>
+      <div class="legend"><span><i style="background:var(--s2)"></i>фитнес каждой прожитой жизни</span></div>
+    </div>
+  </section>
+
+  <!-- ОСТРОВА -->
+  <section id="islands" class="grid" hidden>
+    <div class="card">
+      <h2>Запустить обучение</h2>
+      <p class="muted" style="margin-top:0">Каждый остров — отдельный процесс со своей популяцией. Раз в пять поколений острова
+        обмениваются лучшими мозгами: удачная находка одного расходится по всем, а застрявший не тянет вниз остальных.
+        Учатся в симуляторе — это тысячи жизней в секунду вместо двух минут на жизнь в игре.</p>
+      <div class="row">
+        <label class="muted">островов</label>
+        <input type="number" id="islCount" min="1" max="16" value="4" style="width:80px">
+        <label class="muted">имя</label>
+        <input type="text" id="islPrefix" value="остров" style="width:160px">
+        <button class="btn" id="btnStart">Запустить</button>
+        <button class="btn ghost" id="btnStopAll">Остановить все</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Острова</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>Остров</th><th>Состояние</th><th>Поколение</th><th>Рекорд</th><th>Медиана</th><th>Время</th><th>Ход</th><th></th></tr></thead>
+        <tbody id="tbIslands"></tbody>
+      </table></div>
+      <div class="empty" id="noIslands">Островов пока нет — запусти обучение выше.</div>
+    </div>
+    <div class="card">
+      <h2>Медиана популяции по поколениям</h2>
+      <svg class="chart" id="chMedian"></svg>
+      <div class="legend" id="lgMedian"></div>
+      <p class="muted" style="margin-bottom:0">Рекорд показывает лучшую особь, медиана — насколько подтянулась вся популяция. Рост медианы важнее рекорда: единичный рекорд бывает везением.</p>
+    </div>
+  </section>
+
+  <!-- ИГРА -->
+  <section id="game" class="grid" hidden>
+    <div class="grid kpis">
+      <div class="card kpi"><div class="v" id="gGen">—</div><div class="l">поколение</div></div>
+      <div class="card kpi"><div class="v" id="gLives">—</div><div class="l">жизней прожито</div></div>
+      <div class="card kpi"><div class="v" id="gEval">—</div><div class="l">особей оценено</div></div>
+      <div class="card kpi"><div class="v" id="gRecord">—</div><div class="l">рекорд</div></div>
+      <div class="card kpi"><div class="v" id="gMedian">—</div><div class="l">медиана оценённых</div></div>
+      <div class="card kpi"><div class="v" id="gRepl">—</div><div class="l">опытов передано</div></div>
+    </div>
+    <div class="card" id="gOffline" hidden>
+      <div class="empty">Игра не на связи. Зайди в мир и призови напарника: <code>/naparnik spawn</code>.<br>
+        Статистика появится здесь через пару секунд.</div>
+    </div>
+    <div class="grid bots" id="gBots"></div>
+    <div class="card">
+      <h2>Фитнес прожитых жизней</h2>
+      <svg class="chart" id="chGame"></svg>
+      <p class="muted" style="margin-bottom:0">Каждая точка — одна законченная жизнь. Если облако точек ползёт вверх, популяция в игре учится.</p>
+    </div>
+  </section>
+
+  <!-- НАСТРОЙКИ -->
+  <section id="settings" hidden>
+    <p class="muted" style="margin-top:0">Один файл настроек на всё: его читают и острова, и игра. Сохранил — игра подхватит за секунду,
+      острова — со следующего поколения. Перезапускать ничего не нужно.</p>
+    <div class="grid settings" id="settingsGrid"></div>
+    <div class="savebar row">
+      <button class="btn" id="btnSave">Сохранить</button>
+      <button class="btn ghost" id="btnRevert">Отменить правки</button>
+      <button class="btn danger" id="btnReset">Вернуть по умолчанию</button>
+      <span class="muted" id="dirty"></span>
+    </div>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+const ACTIONS = [
+  ["вперёд", "Шаг на клетку вперёд. Запрыгивает на блок, спускается с обрыва до четырёх блоков."],
+  ["влево", "Поворот на 90° влево."],
+  ["вправо", "Поворот на 90° вправо."],
+  ["копать", "Ломает блок перед собой с дропом. Камень — с деревянной кирки, железо — с каменной."],
+  ["ставить", "Ставит блок из сумки перед собой. Основа любой постройки."],
+  ["бить", "Бьёт живое рядом: мобов, тебя и других напарников."],
+  ["есть", "Съедает еду из сумки, когда голоден."],
+  ["крафт", "Делает следующую кирку, если хватает ресурсов."],
+];
+
+const TARGETS = [
+  ["attack.monsters", "Враждебные мобы", "Зомби, скелеты, пауки, криперы и прочие."],
+  ["attack.rivals", "Другие напарники", "Драка за право выжить: победитель получает отдельную награду."],
+  ["attack.animals", "Мирные животные", "Коровы, свиньи, овцы, жители."],
+  ["attack.players", "Игроки, то есть ты", "Выключено по умолчанию."],
+];
+
+const GROUPS = [
+  { title: "Награды: выживание и исследование", keys: [
+    ["reward.age", "За прожитое решение", "Малый вес — дожить до конца может и тот, кто просто стоял."],
+    ["reward.visited", "За новую клетку", "Выводит из топтания на месте. Главное лекарство от «два шага вперёд, два назад»."],
+  ]},
+  { title: "Награды: ресурсы и стройка", keys: [
+    ["reward.mined", "За сломанный блок", "Свои же поставленные блоки не считаются — иначе «поставил-сломал» накручивает очки."],
+    ["reward.picked", "За подобранный предмет", "Свой дроп и то, что бросил ты."],
+    ["reward.built", "За поставленный блок", "Блок, приставленный к своим, считается втрое."],
+    ["reward.sheltered", "За решение под крышей", "Крыша и три стены вокруг — проверяемый признак дома."],
+  ]},
+  { title: "Бой: поведение", keys: [
+    ["faceEnemyRange", "Разворот к врагу, блоков", "Ближе этого расстояния сам разворачивается лицом к цели. Цена: в этом радиусе не может убежать. 0 выключает."],
+  ]},
+  { title: "Награды: бой", keys: [
+    ["reward.hits", "За попадание", "По мобу, игроку или другому напарнику."],
+    ["reward.kills", "За убийство", "Любой живой цели."],
+    ["reward.rivals", "За победу над напарником", "Сверху к убийству. Толкает драться за право выжить."],
+  ]},
+  { title: "Награды: развитие и штрафы", keys: [
+    ["reward.tech", "За уровень техники", "Деревянная → каменная → железная кирка."],
+    ["reward.repertoire", "За новое освоенное действие", "Толкает пробовать разное, а не долбить одно."],
+    ["reward.wasted", "За пустое действие", "Отрицательное = штраф. Копнул воздух, ударил в пустоту, поел без еды."],
+  ]},
+  { title: "Жизнь и темп", keys: [
+    ["life", "Длина жизни, решений", "Короче — поколения сменяются быстрее; длиннее — особь успевает показать себя."],
+    ["decisionEvery", "Тиков на решение", "10 = два решения в секунду. Меньше — быстрее и дёрганее."],
+    ["explore", "Доля случайных ходов", "0.2 = пятая часть ходов наугад, с перекосом в копку и бой. Снижай, когда поведение станет осмысленным."],
+    ["sight", "Дальность обзора, блоков", "Дальше видит — дороже каждое решение для сервера."],
+  ]},
+  { title: "Эволюция", keys: [
+    ["population", "Размер популяции", "Больше — разнообразнее, но медленнее оценка."],
+    ["randomTail", "Случайных особей", "Держит разнообразие, не даёт схлопнуться в один геном."],
+    ["mutationRate", "Доля мутирующих весов", "0.03 = три процента весов потомка слегка сдвигаются."],
+    ["mutationSigma", "Сила мутации", "Насколько сильно сдвигается вес. Больше — смелее поиск, меньше — точнее доводка."],
+    ["tournament", "Размер турнира", "Из скольких случайных особей выбирается родитель. Больше — жёстче отбор."],
+    ["seeds", "Карт на особь (острова)", "Сколько разных миров проживает особь при оценке. Меньше везения в оценке."],
+  ]},
+];
+
+let state = null, saved = {}, draft = {}, tab = "overview";
+const $ = id => document.getElementById(id);
+const fmt = v => v == null || isNaN(v) ? "—" : Math.round(v).toLocaleString("ru-RU");
+const colors = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"].map(c => getComputedStyle(document.documentElement).getPropertyValue(c).trim());
+
+function toast(msg, err) {
+  const t = $("toast"); t.textContent = msg; t.className = "show" + (err ? " err" : "");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.className = "", 3500);
+}
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || ("ошибка " + r.status));
+  return data;
+}
+
+/* Линейный график на SVG без библиотек: series = [{color, points: [[x, y]], dots}] */
+function chart(svg, series, { yLabel = "" } = {}) {
+  const w = svg.clientWidth || 800, h = svg.clientHeight || 260, pad = { l: 58, r: 12, t: 10, b: 26 };
+  const pts = series.flatMap(s => s.points).filter(p => p[1] != null && !isNaN(p[1]));
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  if (!pts.length) { svg.innerHTML = `<text x="${w/2}" y="${h/2}" text-anchor="middle" fill="currentColor" opacity=".45" font-size="13">данных пока нет</text>`; return; }
+  let x0 = Math.min(...pts.map(p => p[0])), x1 = Math.max(...pts.map(p => p[0]));
+  let y0 = Math.min(0, ...pts.map(p => p[1])), y1 = Math.max(...pts.map(p => p[1]));
+  if (x1 === x0) x1 = x0 + 1; if (y1 === y0) y1 = y0 + 1;
+  const X = x => pad.l + (x - x0) / (x1 - x0) * (w - pad.l - pad.r);
+  const Y = y => h - pad.b - (y - y0) / (y1 - y0) * (h - pad.t - pad.b);
+  let out = "";
+  for (let i = 0; i <= 4; i++) {
+    const v = y0 + (y1 - y0) * i / 4, yy = Y(v);
+    out += `<line x1="${pad.l}" x2="${w - pad.r}" y1="${yy}" y2="${yy}" stroke="currentColor" opacity=".08"/>`;
+    out += `<text x="${pad.l - 8}" y="${yy + 4}" text-anchor="end" font-size="11" fill="currentColor" opacity=".55">${fmt(v)}</text>`;
+  }
+  out += `<text x="${pad.l}" y="${h - 6}" font-size="11" fill="currentColor" opacity=".55">${fmt(x0)}</text>`;
+  out += `<text x="${w - pad.r}" y="${h - 6}" text-anchor="end" font-size="11" fill="currentColor" opacity=".55">${fmt(x1)}</text>`;
+  for (const s of series) {
+    const p = s.points.filter(q => q[1] != null && !isNaN(q[1]));
+    if (!p.length) continue;
+    if (s.dots) {
+      for (const q of p) out += `<circle cx="${X(q[0]).toFixed(1)}" cy="${Y(q[1]).toFixed(1)}" r="2.4" fill="${s.color}" opacity=".7"/>`;
+    } else {
+      out += `<polyline fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" points="${p.map(q => X(q[0]).toFixed(1) + "," + Y(q[1]).toFixed(1)).join(" ")}"/>`;
+    }
+  }
+  svg.style.color = getComputedStyle(document.body).color;
+  svg.innerHTML = out;
+}
+
+function legend(el, runs) {
+  el.innerHTML = runs.map((r, i) => `<span><i style="background:${colors[i % colors.length]}"></i>${r.name}</span>`).join("");
+}
+
+function renderOverview() {
+  const runs = state.runs, g = state.game;
+  const best = runs.map(r => r.record).filter(v => v != null);
+  $("kOffline").textContent = best.length ? fmt(Math.max(...best)) : "—";
+  $("kGame").textContent = g && fresh(g) ? fmt(g.record) : "—";
+  $("kIslands").textContent = runs.filter(r => r.running).length;
+  $("kLives").textContent = g && fresh(g) ? fmt(g.lives) : "0";
+  $("kPromoted").textContent = state.promoted ? state.promoted.run : "из мода";
+  /* Рекорд на данный момент, а не лучший в поколении: поколения живут на разных картах, лучший
+     скачет от везения, и на пиле роста не видно. Рекорд только растёт — это и есть прогресс. */
+  chart($("chOverview"), runs.map((r, i) => {
+    let top = -Infinity;
+    return { color: colors[i % colors.length], points: r.history.map(h => [h[0], top = Math.max(top, h[1])]) };
+  }));
+  legend($("lgOverview"), runs);
+  chart($("chGameOverview"), [{ color: colors[1], dots: true, points: g && g.recent ? g.recent : [] }]);
+}
+
+function renderIslands() {
+  const runs = state.runs;
+  $("noIslands").hidden = runs.length > 0;
+  $("tbIslands").innerHTML = runs.map((r, i) => {
+    const st = r.running ? `<span class="tag run">учится</span>` : r.stale ? `<span class="tag stale">пропал</span>` : `<span class="tag">стоит</span>`;
+    const trend = r.history.length > 1 ? r.history[r.history.length - 1][2] - r.history[0][2] : 0;
+    return `<tr>
+      <td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${colors[i % colors.length]};margin-right:8px"></span><b>${r.name}</b></td>
+      <td>${st}</td><td>${fmt(r.generation)}</td><td>${fmt(r.record)}</td><td>${fmt(r.median)}</td>
+      <td>${r.seconds != null ? dur(r.seconds) : "—"}</td>
+      <td class="muted">${r.history.length > 1 ? (trend >= 0 ? "▲ " : "▼ ") + fmt(Math.abs(trend)) : "—"}</td>
+      <td class="row" style="justify-content:flex-end">
+        <button class="btn" data-promote="${r.name}" ${r.hasBest ? "" : "disabled"} title="Переселить популяцию в игре вокруг лучшего мозга этого острова">В игру</button>
+        ${r.running ? `<button class="btn ghost" data-stop="${r.name}">Стоп</button>` : `<button class="btn danger" data-del="${r.name}">Удалить</button>`}
+      </td></tr>`;
+  }).join("");
+  chart($("chMedian"), runs.map((r, i) => ({ color: colors[i % colors.length], points: r.history.map(h => [h[0], h[2]]) })));
+  legend($("lgMedian"), runs);
+}
+
+function fresh(g) { return g && state.now - g.updated < 15000; }
+
+function renderGame() {
+  const g = state.game, on = fresh(g);
+  $("gOffline").hidden = on;
+  for (const [id, key] of [["gGen","generation"],["gLives","lives"],["gRecord","record"],["gMedian","median"],["gRepl","replacements"]]) {
+    $(id).textContent = on ? fmt(g[key]) : "—";
+  }
+  $("gEval").textContent = on && g.size ? `${g.evaluated}/${g.size}` : "—";
+  $("gBots").innerHTML = on ? g.bots.map(b => `
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <b>Особь ${b.slot}</b><span class="tag">${b.action}</span>
+      </div>
+      <div class="bar"><span style="width:${Math.min(100, b.age / b.life * 100)}%"></span></div>
+      <div class="muted" style="font-size:12px;margin-bottom:10px">жизнь ${b.age}/${b.life} · фитнес ${fmt(b.fitness)} · сытость ${b.hunger}/20${b.pos ? " · " + b.pos.join(" ") : ""}</div>
+      <div class="stats">
+        <div><b>${b.mined}</b>сломал</div><div><b>${b.picked}</b>поднял</div><div><b>${b.built}</b>построил</div>
+        <div><b>${b.sheltered}</b>под крышей</div><div><b>${b.hits}</b>попал</div><div><b>${b.kills}</b>убил${b.rivals ? " (" + b.rivals + " своих)" : ""}</div>
+        <div><b>${b.tech}</b>техника</div><div><b>${b.visited}</b>клеток</div><div><b>${b.wasted}</b>впустую</div>
+      </div>
+    </div>`).join("") : "";
+  chart($("chGame"), [{ color: colors[1], dots: true, points: g && g.recent ? g.recent : [] }]);
+}
+
+function dur(s) { return s < 60 ? s + " с" : s < 3600 ? Math.floor(s / 60) + " мин" : (s / 3600).toFixed(1) + " ч"; }
+
+function renderSettings() {
+  const grid = $("settingsGrid");
+  const actions = `<div class="card"><h2>Разрешённые действия</h2>${ACTIONS.map((a, i) => `
+    <div class="toggle"><div><div class="field name" style="padding:0;border:0;display:block">${a[0]}</div><div class="muted" style="font-size:12px">${a[1]}</div></div>
+    <label class="switch"><input type="checkbox" data-key="action.${i}" ${draft["action." + i] !== "0" ? "checked" : ""}><span></span></label></div>`).join("")}
+    <p class="muted" style="font-size:12px;margin-bottom:0">Выключенное действие мозг не выбирает вовсе, а не выбирает-и-получает-штраф.</p></div>`
+    + `<div class="card"><h2>Кого можно бить</h2>${TARGETS.map(([k, name, hint]) => `
+    <div class="toggle"><div><div style="font-weight:600">${name}</div><div class="muted" style="font-size:12px">${hint}</div></div>
+    <label class="switch"><input type="checkbox" data-key="${k}" ${draft[k] !== "0" ? "checked" : ""}><span></span></label></div>`).join("")}
+    <p class="muted" style="font-size:12px;margin-bottom:0">Удар засчитывается только по цели перед собой. Выключенную цель напарник не видит в своих входах и не бьёт.</p></div>`;
+  const groups = GROUPS.map(gr => `<div class="card"><h2>${gr.title}</h2>${gr.keys.map(([k, name, hint]) => `
+    <div class="field"><span class="name">${name}</span><input type="number" step="any" data-key="${k}" value="${draft[k] ?? ""}"><span class="hint">${hint}</span></div>`).join("")}</div>`).join("");
+  grid.innerHTML = actions + groups;
+  markDirty();
+}
+
+function markDirty() {
+  const changed = Object.keys(draft).filter(k => draft[k] !== saved[k]).length;
+  $("dirty").textContent = changed ? `несохранённых правок: ${changed}` : "всё сохранено";
+  $("btnSave").disabled = !changed;
+  $("btnRevert").disabled = !changed;
+}
+
+document.addEventListener("input", e => {
+  const k = e.target.dataset && e.target.dataset.key;
+  if (!k) return;
+  draft[k] = e.target.type === "checkbox" ? (e.target.checked ? "1" : "0") : e.target.value;
+  markDirty();
+});
+
+document.addEventListener("click", async e => {
+  const t = e.target;
+  try {
+    if (t.dataset.tab) {
+      history.replaceState(null, "", "#" + t.dataset.tab);
+      openTab(t.dataset.tab);
+      render();
+    } else if (t.id === "btnStart") {
+      const r = await api("/api/islands/start", { count: +$("islCount").value, prefix: $("islPrefix").value.trim() });
+      toast("Запущено островов: " + r.started.length);
+    } else if (t.id === "btnStopAll") {
+      await api("/api/islands/stop", {}); toast("Острова остановятся в течение поколения");
+    } else if (t.dataset.stop) {
+      await api("/api/islands/stop", { names: [t.dataset.stop] }); toast(t.dataset.stop + ": остановка");
+    } else if (t.dataset.del) {
+      if (!confirm("Удалить остров " + t.dataset.del + " вместе с историей и лучшим мозгом?")) return;
+      await api("/api/islands/delete", { names: [t.dataset.del] }); toast(t.dataset.del + " удалён");
+    } else if (t.dataset.promote) {
+      const r = await api("/api/promote", { run: t.dataset.promote });
+      toast(`Мозг острова ${r.run} (рекорд ${fmt(r.record)}) уйдёт в игру в течение двух секунд`);
+    } else if (t.id === "btnSave") {
+      await api("/api/config", draft); saved = { ...draft }; markDirty(); toast("Сохранено — игра подхватит за секунду");
+    } else if (t.id === "btnRevert") {
+      draft = { ...saved }; renderSettings();
+    } else if (t.id === "btnReset") {
+      if (!confirm("Вернуть все настройки к значениям по умолчанию?")) return;
+      await api("/api/config/reset", {}); await refresh(true); toast("Настройки по умолчанию");
+    } else return;
+    refresh();
+  } catch (err) { toast(err.message, true); }
+});
+
+function render() {
+  const g = state.game, on = fresh(g);
+  $("dotGame").classList.toggle("on", on);
+  $("lblGame").textContent = on ? `игра на связи · ${g.bots.length} напарн.` : "игра не на связи";
+  const running = state.runs.filter(r => r.running).length;
+  $("dotIsl").classList.toggle("on", running > 0);
+  $("lblIsl").textContent = running ? `островов учится: ${running}` : "острова стоят";
+  if (tab === "overview") renderOverview();
+  if (tab === "islands") renderIslands();
+  if (tab === "game") renderGame();
+}
+
+async function refresh(resetDraft) {
+  try {
+    state = await api("/api/state");
+    const firstLoad = !Object.keys(saved).length;
+    if (firstLoad || resetDraft) {
+      saved = { ...state.config }; draft = { ...state.config };
+      renderSettings();
+    }
+    render();
+  } catch (err) {
+    $("lblGame").textContent = "панель не отвечает";
+  }
+}
+
+function openTab(name) {
+  if (!document.getElementById(name)) return;
+  tab = name;
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== name);
+}
+openTab(location.hash.slice(1) || "overview");
+window.addEventListener("hashchange", () => { openTab(location.hash.slice(1)); render(); });
+
+refresh();
+setInterval(refresh, 1500);
+window.addEventListener("resize", () => state && render());
+</script>
+</body>
+</html>

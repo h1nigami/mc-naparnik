@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "naparnik",
+	"version": "${version}",
+	"name": "Напарник",
+	"description": "Напарник, которым управляет нейросеть, выведенная генетическим алгоритмом.",
+	"authors": ["damirhanov"],
+	"license": "All-Rights-Reserved",
+	"environment": "*",
+	"entrypoints": {
+		"main": ["naparnik.NaparnikMod"]
+	},
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

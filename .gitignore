@@ -1,0 +1,25 @@
+# Локальная JDK — ставится отдельно (см. README), 400+ МБ и чужая лицензия
+.jdk/
+
+# Тестовый сервер: server.jar от Mojang распространять нельзя по EULA
+server/
+
+# Сторонние бинарники Fabric — скачиваются по ссылкам из README
+dist/
+
+# Сборка
+out/
+mod/build/
+mod/.gradle/
+.gradle/
+*.class
+
+# Результаты обучения и журналы — у каждого свои
+/brain.json
+train.log
+*.log
+
+# Системное
+.DS_Store
+.idea/
+__pycache__/
