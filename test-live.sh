@@ -4,7 +4,11 @@ set -e
 cd "$(dirname "$0")/server"
 export JAVA_HOME="$(cd ..; pwd)/.jdk/jdk-25.0.4.1+1/Contents/Home"
 rm -f live.log; rm -f /tmp/naparnik-in; mkfifo /tmp/naparnik-in
-"$JAVA_HOME/bin/java" -Xmx2G -jar fabric-server-launch.jar nogui < /tmp/naparnik-in > live.log 2>&1 &
+# свой домашний каталог: иначе тестовый сервер пишет статистику в тот же файл, что и твоя игра
+mkdir -p "$PWD/.test-home/.naparnik"
+# настройки опыта можно передать строками KEY=VALUE через TEST_CONFIG
+[ -n "${TEST_CONFIG:-}" ] && printf '%s\n' $TEST_CONFIG > "$PWD/.test-home/.naparnik/config.properties"
+"$JAVA_HOME/bin/java" -Duser.home="$PWD/.test-home" -Xmx2G -jar fabric-server-launch.jar nogui < /tmp/naparnik-in > live.log 2>&1 &
 SRV=$!
 exec 3> /tmp/naparnik-in
 for i in $(seq 1 150); do
@@ -18,13 +22,13 @@ sleep 4
 for i in 1 2 3; do echo "execute positioned 0.0 100.0 0.0 run naparnik spawn" >&3; sleep 1; done
 sleep 5
 # ставим вокруг напарника стену из брёвен — проверяем, что связка сенсор->решение->копка работает
-echo "execute at @e[type=minecraft:villager,limit=1] run fill ~-3 ~ ~-3 ~3 ~2 ~3 minecraft:oak_log hollow" >&3
+[ "${WALL:-1}" = "1" ] && echo "execute at @e[type=minecraft:villager,limit=1] run fill ~-3 ~ ~-3 ~3 ~2 ~3 minecraft:oak_log hollow" >&3
 sleep 2
 echo "execute if entity @e[type=minecraft:villager] run say ЖИТЕЛЬ В МИРЕ ЕСТЬ" >&3
 sleep 2
 echo "data get entity @e[type=minecraft:villager,limit=1] Pos" >&3
 sleep 2
-echo "naparnik speed 1" >&3
+echo "naparnik speed ${SPEED:-1}" >&3
 sleep 1
 echo "naparnik status" >&3   # первый замер
 sleep "${LIVE_SECONDS:-90}"   # ~2 решения мозга в секунду

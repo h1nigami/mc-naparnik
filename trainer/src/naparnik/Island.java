@@ -23,7 +23,9 @@ import java.util.stream.IntStream;
  * расходится по всем.
  */
 public final class Island {
-    static final int MIGRATE = 5;
+    /** Раз в столько поколений — один мигрант с одного случайного соседа. Раньше каждые 5 поколений
+     *  приходили лучшие со всех соседей, и острова слиплись: у двух мозги совпали до последнего веса. */
+    static final int MIGRATE = 50;
 
     public static void main(String[] args) throws Exception {
         String name = args.length > 0 ? args[0] : "остров";
@@ -98,20 +100,21 @@ public final class Island {
 
     /** Лучшие мозги соседних островов заменяют случайных особей (кроме элиты на позиции 0). */
     static void migrate(Path self, float[][] P, Random r) {
+        java.util.List<Path> neighbours = new java.util.ArrayList<>();
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(self.getParent())) {
             for (Path other : ds) {
-                if (other.equals(self)) continue;
-                Path best = other.resolve("best.json");
-                if (!Files.exists(best)) continue;
-                try {
-                    float[] g = Genome.load(best);
-                    if (g.length == Brain.GENOME) P[1 + r.nextInt(P.length - 1)] = g;
-                } catch (IOException ignored) {
-                    // сосед как раз переписывает свой файл — возьмём на следующей миграции
-                }
+                if (!other.equals(self) && Files.exists(other.resolve("best.json"))) neighbours.add(other);
             }
         } catch (IOException ignored) {
             // соседей нет — остров учится один, это законный режим
+        }
+        if (neighbours.isEmpty()) return;
+        Path from = neighbours.get(r.nextInt(neighbours.size()));
+        try {
+            float[] g = Genome.load(from.resolve("best.json"));
+            if (g.length == Brain.GENOME) P[1 + r.nextInt(P.length - 1)] = g;
+        } catch (IOException ignored) {
+            // сосед как раз переписывает свой файл — возьмём на следующей миграции
         }
     }
 

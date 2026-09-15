@@ -38,10 +38,29 @@ public final class Config {
         DEFAULTS.put("sight", "10");
         DEFAULTS.put("seeds", "3");
         DEFAULTS.put("faceEnemyRange", "4");
+        DEFAULTS.put("sim.trees", "260");
+
+        // против зависаний: простой — решения подряд без прогресса (новая клетка, добыча, постройка, убийство)
+        DEFAULTS.put("stagnation.grace", "15");
+        DEFAULTS.put("kick.after", "25");
+        DEFAULTS.put("kick.length", "6");
+        DEFAULTS.put("climb.after", "20");
+
+        // выживание как у игрока: голод и вода убивают
+        DEFAULTS.put("hunger.drainTicks", "30");
+        DEFAULTS.put("sim.lakes", "6");
+        DEFAULTS.put("sim.lakeSize", "60");
+        DEFAULTS.put("sim.animals", "10");
+
+        // рефлексы выживания: поесть, поохотиться, не лезть в воду и выплывать
+        DEFAULTS.put("eat.below", "10");
+        DEFAULTS.put("hunt.below", "14");
+        DEFAULTS.put("hunt.range", "24");
+        DEFAULTS.put("water.avoid", "1");
 
         DEFAULTS.put("attack.monsters", "1");
         DEFAULTS.put("attack.rivals", "1");
-        DEFAULTS.put("attack.animals", "0");
+        DEFAULTS.put("attack.animals", "1");
         DEFAULTS.put("attack.players", "0");
 
         DEFAULTS.put("reward.age", "0.2");
@@ -55,6 +74,13 @@ public final class Config {
         DEFAULTS.put("reward.rivals", "500");
         DEFAULTS.put("reward.repertoire", "100");
         DEFAULTS.put("reward.tech", "5000");
+        DEFAULTS.put("reward.wood", "0");
+        DEFAULTS.put("reward.stagnation", "-3");
+        DEFAULTS.put("reward.repeat", "-20");
+        DEFAULTS.put("reward.kick", "-50");
+        DEFAULTS.put("reward.death", "-1000");
+        DEFAULTS.put("reward.hunt", "300");
+        DEFAULTS.put("reward.eat", "50");
         DEFAULTS.put("reward.wasted", "-5");
 
         for (int i = 0; i < ACTION_NAMES.length; i++) DEFAULTS.put("action." + i, "1");

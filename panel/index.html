@@ -160,6 +160,7 @@
       <div class="card kpi"><div class="v" id="gRecord">—</div><div class="l">рекорд</div></div>
       <div class="card kpi"><div class="v" id="gMedian">—</div><div class="l">медиана оценённых</div></div>
       <div class="card kpi"><div class="v" id="gRepl">—</div><div class="l">опытов передано</div></div>
+      <div class="card kpi"><div class="v" id="gDeaths" style="font-size:18px">—</div><div class="l">от чего умирали</div></div>
     </div>
     <div class="card" id="gOffline" hidden>
       <div class="empty">Игра не на связи. Зайди в мир и призови напарника: <code>/naparnik spawn</code>.<br>
@@ -178,6 +179,14 @@
     <p class="muted" style="margin-top:0">Один файл настроек на всё: его читают и острова, и игра. Сохранил — игра подхватит за секунду,
       острова — со следующего поколения. Перезапускать ничего не нужно.</p>
     <div class="grid settings" id="settingsGrid"></div>
+    <div class="card" style="margin-top:16px">
+      <h2>Готовые задачи</h2>
+      <p class="muted" style="margin-top:0">Заполняют настройки под одну цель. Правки попадают в форму — проверь и нажми «Сохранить».</p>
+      <div class="row">
+        <button class="btn ghost" data-preset="wood">Задача: добыча дерева</button>
+        <span class="muted">награда только за брёвна и немного за новые клетки, лишние действия выключены, 10 карт на особь</span>
+      </div>
+    </div>
     <div class="savebar row">
       <button class="btn" id="btnSave">Сохранить</button>
       <button class="btn ghost" id="btnRevert">Отменить правки</button>
@@ -200,6 +209,19 @@ const ACTIONS = [
   ["крафт", "Делает следующую кирку, если хватает ресурсов."],
 ];
 
+/* Рецепт из замера: узкая награда учится только при оценке на многих картах. Частая награда за
+   новые клетки оставлена как подсказка «иди ищи» — без неё редкая награда за бревно почти не учит. */
+const PRESETS = {
+  wood: {
+    "reward.wood": "100", "reward.visited": "2", "reward.age": "0", "reward.mined": "0", "reward.picked": "0",
+    "reward.built": "0", "reward.sheltered": "0", "reward.hits": "0", "reward.kills": "0", "reward.rivals": "0",
+    "reward.repertoire": "0", "reward.tech": "0", "reward.wasted": "0",
+    "action.0": "1", "action.1": "1", "action.2": "1", "action.3": "1",
+    "action.4": "0", "action.5": "0", "action.6": "0", "action.7": "0",
+    "seeds": "10",
+  },
+};
+
 const TARGETS = [
   ["attack.monsters", "Враждебные мобы", "Зомби, скелеты, пауки, криперы и прочие."],
   ["attack.rivals", "Другие напарники", "Драка за право выжить: победитель получает отдельную награду."],
@@ -213,6 +235,7 @@ const GROUPS = [
     ["reward.visited", "За новую клетку", "Выводит из топтания на месте. Главное лекарство от «два шага вперёд, два назад»."],
   ]},
   { title: "Награды: ресурсы и стройка", keys: [
+    ["reward.wood", "За добытое бревно", "Отдельно от прочих блоков. Главная награда задачи «дерево»."],
     ["reward.mined", "За сломанный блок", "Свои же поставленные блоки не считаются — иначе «поставил-сломал» накручивает очки."],
     ["reward.picked", "За подобранный предмет", "Свой дроп и то, что бросил ты."],
     ["reward.built", "За поставленный блок", "Блок, приставленный к своим, считается втрое."],
@@ -231,6 +254,30 @@ const GROUPS = [
     ["reward.repertoire", "За новое освоенное действие", "Толкает пробовать разное, а не долбить одно."],
     ["reward.wasted", "За пустое действие", "Отрицательное = штраф. Копнул воздух, ударил в пустоту, поел без еды."],
   ]},
+  { title: "Еда и вода", keys: [
+    ["eat.below", "Есть, когда сытость ниже", "Рефлекс: голоден и есть еда в сумке — ест сам. 0 выключает."],
+    ["hunt.below", "Охотиться, когда сытость ниже", "Рефлекс: голоден и рядом дичь — идёт к ней и бьёт. Нужна разрешённая цель «Мирные животные». 0 выключает."],
+    ["hunt.range", "Видит дичь на, блоков", "Дальше — дольше идти за мясом."],
+    ["water.avoid", "Не заходить в воду", "1 — по своей воле в воду не шагает, а попав в неё, выбирается к берегу. 0 — как раньше."],
+    ["reward.hunt", "За добытую дичь", "Отбор должен ценить охоту, а не только рефлекс."],
+    ["reward.eat", "За съеденную еду", "За каждый приём пищи."],
+    ["climb.after", "Выбираться из ямы через, решений", "Столько решений со всех сторон стены выше 3 блоков — строит лестницу наверх. 0 выключает."],
+    ["sim.animals", "Дичи на карте острова", "Единственный надёжный источник еды в фоновом обучении."],
+    ["sim.lakeSize", "Размер озера на острове", "Больше — вода настоящая угроза, иначе отбор не учится её обходить."],
+  ]},
+  { title: "Выживание", keys: [
+    ["hunger.drainTicks", "Тиков на единицу сытости", "30 = сытость падает на 1 раз в полторы секунды и на нуле уже через 30 секунд. У игрока гораздо медленнее — ускорено, чтобы за двухминутную жизнь голод что-то значил."],
+    ["reward.death", "Штраф за смерть", "Голод, вода или моб. Отбор должен беречь жизнь, а не только копить очки."],
+    ["sim.lakes", "Озёр на карте острова", "Вода в фоновом обучении: без неё острова не научатся её обходить."],
+  ]},
+  { title: "Против зависаний", keys: [
+    ["stagnation.grace", "Допуск простоя, решений", "Сколько ходов подряд без прогресса ещё не штраф. Прогресс — новая клетка, добыча, постройка в новом месте, подобранный предмет, попадание."],
+    ["reward.stagnation", "Штраф за ход простоя", "Начисляется за каждый ход сверх допуска. Бьёт по кружению, «туда-обратно» и полному бездействию."],
+    ["reward.repeat", "Штраф за повтор блока", "Сломал свой же блок или снова строит в той же клетке."],
+    ["kick.after", "Толкать после, решений", "Столько ходов без прогресса — и напарника толкают: несколько ходов он идёт в открытую сторону сам. 0 выключает."],
+    ["kick.length", "Длина толчка, ходов", "Сколько ходов подряд длится толчок."],
+    ["reward.kick", "Штраф за толчок", "Толчок помогает выйти из тупика, но отбор должен предпочитать тех, кто справляется сам."],
+  ]},
   { title: "Жизнь и темп", keys: [
     ["life", "Длина жизни, решений", "Короче — поколения сменяются быстрее; длиннее — особь успевает показать себя."],
     ["decisionEvery", "Тиков на решение", "10 = два решения в секунду. Меньше — быстрее и дёрганее."],
@@ -243,7 +290,8 @@ const GROUPS = [
     ["mutationRate", "Доля мутирующих весов", "0.03 = три процента весов потомка слегка сдвигаются."],
     ["mutationSigma", "Сила мутации", "Насколько сильно сдвигается вес. Больше — смелее поиск, меньше — точнее доводка."],
     ["tournament", "Размер турнира", "Из скольких случайных особей выбирается родитель. Больше — жёстче отбор."],
-    ["seeds", "Карт на особь (острова)", "Сколько разных миров проживает особь при оценке. Меньше везения в оценке."],
+    ["seeds", "Карт на особь (острова)", "Главное лекарство от застоя. Замер: при 3 картах добыча дерева застряла на 8, при 10 выросла до 22. Дороже по времени."],
+    ["sim.trees", "Деревьев на карте острова", "Густой лес (260) — искать нечего. Редкий (40) — учит именно поиску."],
   ]},
 ];
 
@@ -340,6 +388,29 @@ function renderIslands() {
 
 function fresh(g) { return g && state.now - g.updated < 15000; }
 
+/* Человеческие имена для частых предметов; остальное показывается как есть, без «_». */
+const ITEM_RU = {
+  oak_log: "бревно дуба", birch_log: "бревно берёзы", spruce_log: "бревно ели", jungle_log: "бревно тропическое",
+  acacia_log: "бревно акации", dark_oak_log: "бревно тёмного дуба", cherry_log: "бревно вишни", mangrove_log: "бревно мангра",
+  pale_oak_log: "бревно бледного дуба", oak_planks: "доски дуба", cobblestone: "булыжник", stone: "камень", dirt: "земля",
+  grass_block: "дёрн", sand: "песок", gravel: "гравий", cobbled_deepslate: "глубинный булыжник", deepslate: "глубинный сланец",
+  andesite: "андезит", diorite: "диорит", granite: "гранит", raw_iron: "сырое железо", iron_ingot: "железный слиток",
+  apple: "яблоко", oak_sapling: "саженец дуба", birch_sapling: "саженец берёзы", spruce_sapling: "саженец ели",
+  stick: "палка", coal: "уголь", oak_leaves: "листва дуба", snow_block: "снег", clay_ball: "глина",
+};
+const itemName = id => ITEM_RU[id] || id.replace(/_/g, " ");
+const itemsHtml = list => list && list.length
+  ? list.map(([id, n]) => `<span class="tag" style="margin:2px 4px 2px 0">${itemName(id)} ×${n}</span>`).join("")
+  : `<span class="muted">пусто</span>`;
+
+/* Полоска как у игрока: доля от максимума, цвет по смыслу. */
+const vital = (label, value, max, color) => `
+  <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin:3px 0">
+    <span style="width:62px" class="muted">${label}</span>
+    <div class="bar" style="flex:1;margin:0"><span style="width:${Math.max(0, Math.min(100, value / max * 100))}%;background:${color}"></span></div>
+    <span style="width:44px;text-align:right;font-variant-numeric:tabular-nums">${value}/${max}</span>
+  </div>`;
+
 function renderGame() {
   const g = state.game, on = fresh(g);
   $("gOffline").hidden = on;
@@ -347,18 +418,34 @@ function renderGame() {
     $(id).textContent = on ? fmt(g[key]) : "—";
   }
   $("gEval").textContent = on && g.size ? `${g.evaluated}/${g.size}` : "—";
+  const deaths = on && g.deaths ? Object.entries(g.deaths) : [];
+  $("gDeaths").textContent = deaths.length ? deaths.map(([k, v]) => `${k} ${v}`).join(" · ") : (on ? "никто" : "—");
   $("gBots").innerHTML = on ? g.bots.map(b => `
     <div class="card">
       <div class="row" style="justify-content:space-between">
-        <b>Особь ${b.slot}</b><span class="tag">${b.action}</span>
+        <b>Особь ${b.slot}</b><span class="tag" style="${b.kicking ? "color:var(--warn)" : ""}">${b.action}</span>
       </div>
+      ${b.health != null ? vital("здоровье", b.health, b.maxHealth, "var(--bad)") : ""}
+      ${vital("сытость", b.hunger, 20, "var(--warn)")}
+      ${b.air != null && b.air < b.maxAir ? vital("воздух", Math.max(0, Math.round(b.air / 20)), Math.round(b.maxAir / 20), "var(--s5)") : ""}
       <div class="bar"><span style="width:${Math.min(100, b.age / b.life * 100)}%"></span></div>
       <div class="muted" style="font-size:12px;margin-bottom:10px">жизнь ${b.age}/${b.life} · фитнес ${fmt(b.fitness)} · сытость ${b.hunger}/20${b.pos ? " · " + b.pos.join(" ") : ""}</div>
       <div class="stats">
-        <div><b>${b.mined}</b>сломал</div><div><b>${b.picked}</b>поднял</div><div><b>${b.built}</b>построил</div>
+        <div><b>${b.wood ?? 0}</b>дерева</div><div><b>${b.mined}</b>сломал</div><div><b>${b.picked}</b>поднял</div><div><b>${b.built}</b>построил</div>
         <div><b>${b.sheltered}</b>под крышей</div><div><b>${b.hits}</b>попал</div><div><b>${b.kills}</b>убил${b.rivals ? " (" + b.rivals + " своих)" : ""}</div>
         <div><b>${b.tech}</b>техника</div><div><b>${b.visited}</b>клеток</div><div><b>${b.wasted}</b>впустую</div>
+        <div><b style="color:${(b.streak ?? 0) > 15 ? "var(--warn)" : "inherit"}">${b.streak ?? 0}</b>ходов без прогресса</div>
+        <div><b>${b.kicks ?? 0}</b>толчков</div><div><b>${b.repeats ?? 0}</b>повторов</div>
+        <div><b>${b.hunted ?? 0}</b>дичи</div><div><b>${b.eats ?? 0}</b>поел</div><div><b>${b.climbs ?? 0}</b>из ямы</div>
       </div>
+      <details style="margin-top:10px">
+        <summary style="cursor:pointer;font-weight:600">Арсенал</summary>
+        ${b.inv ? `<div class="muted" style="font-size:12px;margin:8px 0 4px">дерево ${b.inv.wood} · камень ${b.inv.stone} · железо ${b.inv.iron} · еда ${b.inv.food}</div>` : ""}
+        <div style="font-size:12px;margin:6px 0 2px" class="muted">в сумке сейчас</div>
+        <div>${itemsHtml(b.bag)}</div>
+        <div style="font-size:12px;margin:8px 0 2px" class="muted">собрал за жизнь</div>
+        <div>${itemsHtml(b.collected)}</div>
+      </details>
     </div>`).join("") : "";
   chart($("chGame"), [{ color: colors[1], dots: true, points: g && g.recent ? g.recent : [] }]);
 }
@@ -415,6 +502,11 @@ document.addEventListener("click", async e => {
     } else if (t.dataset.promote) {
       const r = await api("/api/promote", { run: t.dataset.promote });
       toast(`Мозг острова ${r.run} (рекорд ${fmt(r.record)}) уйдёт в игру в течение двух секунд`);
+    } else if (t.dataset.preset) {
+      Object.assign(draft, PRESETS[t.dataset.preset]);
+      renderSettings();
+      toast("Задача подставлена в форму — проверь и нажми «Сохранить»");
+      return;
     } else if (t.id === "btnSave") {
       await api("/api/config", draft); saved = { ...draft }; markDirty(); toast("Сохранено — игра подхватит за секунду");
     } else if (t.id === "btnRevert") {

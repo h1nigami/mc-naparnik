@@ -18,6 +18,24 @@ public final class Genome {
         return parse(Files.readString(p));
     }
 
+    /**
+     * Мозг под меньшее число входов расширяется нулевыми весами на новых входах. Решения от этого
+     * не меняются ни на одном входе — новые признаки он просто пока не учитывает. Так добавление
+     * входов не выбрасывает ни чемпиона, ни острова, ни популяции в мирах.
+     */
+    public static float[] upgrade(float[] g) {
+        int rest = Brain.HID + Brain.HID * Brain.OUT + Brain.OUT;
+        if (g.length == Brain.GENOME || (g.length - rest) % Brain.HID != 0) return g;
+        int oldIn = (g.length - rest) / Brain.HID;
+        if (oldIn <= 0 || oldIn >= Brain.IN) return g;
+        float[] out = new float[Brain.GENOME];
+        for (int j = 0; j < Brain.HID; j++) {
+            System.arraycopy(g, j * oldIn, out, j * Brain.IN, oldIn);   // новые входы — нулевые веса
+        }
+        System.arraycopy(g, oldIn * Brain.HID, out, Brain.IN * Brain.HID, rest);
+        return out;
+    }
+
     /** Мод читает brain.json ресурсом из jar, где никакого Path нет. */
     public static float[] parse(String s) throws IOException {
         int a = s.indexOf("\"g\":[");
@@ -26,6 +44,6 @@ public final class Genome {
         String[] parts = body.split(",");
         float[] g = new float[parts.length];
         for (int i = 0; i < parts.length; i++) g[i] = Float.parseFloat(parts[i].trim());
-        return g;
+        return upgrade(g);
     }
 }

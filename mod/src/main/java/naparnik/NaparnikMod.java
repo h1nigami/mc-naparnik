@@ -146,9 +146,18 @@ public class NaparnikMod implements ModInitializer {
         return null;
     }
 
+    /** Сколько жизней закончилось смертью и от чего — для панели. */
+    static final Map<String, Integer> DEATHS = new LinkedHashMap<>();
+
     static void endLife(MinecraftServer server, UUID id, String reason) {
         Bot b = BOTS.remove(id);
         if (b == null) return;
+        if (!b.seen) {
+            b.died = true;
+            String cause = b.lastDamage == null ? "другое" : b.lastDamage;
+            DEATHS.merge(cause, 1, Integer::sum);
+            reason = "умер (" + cause + ")";
+        }
         float f = b.fitness();
         int gen = pop.generation;
         pop.record(b.slot, f);
@@ -157,11 +166,13 @@ public class NaparnikMod implements ModInitializer {
 
         String msg = "Напарник " + reason + ": особь " + (b.slot + 1) + "/" + pop.size
                 + " поколения " + gen + ", фитнес " + Math.round(f)
-                + " (добыто " + b.mined + ", поднял " + b.picked + ", построил " + b.built
+                + " (дерева " + b.woodMined + ", добыто " + b.mined + ", поднял " + b.picked + ", построил " + b.built
                 + ", под крышей " + b.sheltered + ", убил " + b.kills
                 + (b.rivals > 0 ? " из них своих " + b.rivals : "")
                 + ", тех " + b.tech + ", клеток " + b.visited.size()
-                + ", впустую " + b.wasted + ")"
+                + ", впустую " + b.wasted + ", простой " + b.stagnant + ", толчков " + b.kicks
+                + ", повторов " + b.repeats + ", подъёмов из ямы " + b.climbs
+                + ", добыл дичи " + b.hunted + ", поел " + b.eats + ")"
                 + (pop.generation > gen ? " \u2014 ПОКОЛЕНИЕ " + pop.generation : "")
                 + ". Рекорд " + Math.round(pop.record);
         server.getPlayerList().broadcastSystemMessage(Component.literal(msg), false);
@@ -272,6 +283,19 @@ public class NaparnikMod implements ModInitializer {
                   .append(",\"life\":").append(life())
                   .append(",\"fitness\":").append(num(b.fitness()))
                   .append(",\"mined\":").append(b.mined)
+                  .append(",\"wood\":").append(b.woodMined)
+                  .append(",\"streak\":").append(b.streak)
+                  .append(",\"stagnant\":").append(b.stagnant)
+                  .append(",\"kicks\":").append(b.kicks)
+                  .append(",\"repeats\":").append(b.repeats)
+                  .append(",\"kicking\":").append(b.kicking)
+                  .append(",\"climbing\":").append(b.climbing).append(",\"climbs\":").append(b.climbs)
+                  .append(",\"hunted\":").append(b.hunted).append(",\"eats\":").append(b.eats)
+                  .append(",\"reflex\":\"").append(b.reflex).append('"')
+                  .append(",\"bag\":").append(itemsJson(b.blocks))
+                  .append(",\"collected\":").append(itemsJson(b.collected))
+                  .append(",\"inv\":{\"wood\":").append(b.wood).append(",\"stone\":").append(b.stone)
+                  .append(",\"iron\":").append(b.iron).append(",\"food\":").append(b.food).append('}')
                   .append(",\"picked\":").append(b.picked)
                   .append(",\"built\":").append(b.built)
                   .append(",\"sheltered\":").append(b.sheltered)
@@ -282,6 +306,8 @@ public class NaparnikMod implements ModInitializer {
                   .append(",\"visited\":").append(b.visited.size())
                   .append(",\"wasted\":").append(b.wasted)
                   .append(",\"hunger\":").append(b.hunger)
+                  .append(",\"health\":").append(b.health).append(",\"maxHealth\":").append(b.maxHealth)
+                  .append(",\"air\":").append(b.air).append(",\"maxAir\":").append(b.maxAir)
                   .append(",\"action\":\"").append(b.lastAction).append('"');
                 if (b.where != null) {
                     sb.append(",\"pos\":[").append(b.where.getX()).append(',')
@@ -289,7 +315,14 @@ public class NaparnikMod implements ModInitializer {
                 }
                 sb.append('}');
             }
-            sb.append("],\"recent\":[");
+            sb.append("],\"deaths\":{");
+            boolean firstDeath = true;
+            for (Map.Entry<String, Integer> e : DEATHS.entrySet()) {
+                if (!firstDeath) sb.append(',');
+                firstDeath = false;
+                sb.append('"').append(e.getKey()).append("\":").append(e.getValue());
+            }
+            sb.append("},\"recent\":[");
             first = true;
             for (float[] r : RECENT) {
                 if (!first) sb.append(',');
@@ -304,6 +337,16 @@ public class NaparnikMod implements ModInitializer {
         } catch (IOException e) {
             LOG.error("не пишется статистика для панели", e);
         }
+    }
+
+    static String itemsJson(Map<net.minecraft.world.item.Item, Integer> items) {
+        StringBuilder sb = new StringBuilder("[");
+        items.entrySet().stream()
+                .filter(e -> e.getValue() > 0)
+                .sorted((x, y) -> y.getValue() - x.getValue())
+                .forEach(e -> sb.append(sb.length() == 1 ? "" : ",")
+                        .append("[\"").append(Bot.itemId(e.getKey())).append("\",").append(e.getValue()).append(']'));
+        return sb.append(']').toString();
     }
 
     static String num(float v) {
@@ -381,7 +424,15 @@ public class NaparnikMod implements ModInitializer {
         for (Bot b : BOTS.values()) {
             String line = "особь " + (b.slot + 1) + " [" + b.age + "/" + life() + "] "
                     + b.describe() + " | сейчас " + b.lastAction;
+            String bag = "   \u2764 " + b.health + "/" + b.maxHealth + " | сытость " + b.hunger + "/20"
+                    + (b.air < b.maxAir ? " | воздух " + b.air / 20 + " с" : "")
+                    + " | в сумке: " + Bot.itemsText(b.blocks)
+                    + " | дерево " + b.wood + ", камень " + b.stone + ", железо " + b.iron + ", еда " + b.food;
+            String got = "   собрал за жизнь: " + Bot.itemsText(b.collected)
+                    + " | простой " + b.stagnant + ", толчков " + b.kicks + ", повторов " + b.repeats;
             src.sendSuccess(() -> Component.literal(line), false);
+            src.sendSuccess(() -> Component.literal(bag), false);
+            src.sendSuccess(() -> Component.literal(got), false);
         }
         return 1;
     }

@@ -3,12 +3,12 @@ package naparnik;
 import java.util.Random;
 
 /**
- * Персептрон 25 -> 12 -> 8 без зависимостей.
+ * Персептрон 30 -> 12 -> 8 без зависимостей.
  * Этот файл копируется в мод БЕЗ ИЗМЕНЕНИЙ — иначе обученные веса означают в игре не то,
  * что означали при обучении.
  */
 public final class Brain {
-    public static final int IN = 25, HID = 12, OUT = 8;
+    public static final int IN = 30, HID = 12, OUT = 8;
 
     static final int W1 = 0;
     static final int B1 = W1 + IN * HID;

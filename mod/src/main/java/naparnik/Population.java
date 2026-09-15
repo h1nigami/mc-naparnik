@@ -44,9 +44,11 @@ public final class Population {
             if (i >= size - tail) {
                 genomes[i] = new Brain(rnd).g;
             } else {
+                /* Близкие вариации, а не почти случайные мозги: при 40% весов со сдвигом ±0.6 потомок
+                   уже не похож на родителя, и лучшая особь растворяется в первом же засеве. */
                 float[] g = seed.clone();
                 for (int k = 0; k < g.length; k++) {
-                    if (rnd.nextFloat() < 0.4f) g[k] += (float) (rnd.nextGaussian() * 0.6);
+                    if (rnd.nextFloat() < 0.1f) g[k] += (float) (rnd.nextGaussian() * 0.2);
                 }
                 genomes[i] = g;
             }
@@ -153,8 +155,9 @@ public final class Population {
         for (int i = 0; i < size; i++) {
             String[] f = lines.get(i + 1).trim().split("\\s+");
             pop.fitness[i] = Float.parseFloat(f[0]);
-            float[] g = new float[f.length - 1];
-            for (int k = 0; k < g.length; k++) g[k] = Float.parseFloat(f[k + 1]);
+            float[] raw = new float[f.length - 1];
+            for (int k = 0; k < raw.length; k++) raw[k] = Float.parseFloat(f[k + 1]);
+            float[] g = Genome.upgrade(raw);   // популяция мира переживает добавление входов
             if (g.length != Brain.GENOME) throw new IOException("геном " + g.length + ", ждали " + Brain.GENOME);
             pop.genomes[i] = g;
         }
