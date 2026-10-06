@@ -8,7 +8,8 @@
 	"license": "All-Rights-Reserved",
 	"environment": "*",
 	"entrypoints": {
-		"main": ["naparnik.NaparnikMod"]
+		"main": ["naparnik.NaparnikMod"],
+		"client": ["naparnik.NaparnikClient"]
 	},
 	"depends": {
 		"fabricloader": ">=0.18.4",

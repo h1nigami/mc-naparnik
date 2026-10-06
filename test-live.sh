@@ -22,11 +22,11 @@ sleep 4
 for i in 1 2 3; do echo "execute positioned 0.0 100.0 0.0 run naparnik spawn" >&3; sleep 1; done
 sleep 5
 # ставим вокруг напарника стену из брёвен — проверяем, что связка сенсор->решение->копка работает
-[ "${WALL:-1}" = "1" ] && echo "execute at @e[type=minecraft:villager,limit=1] run fill ~-3 ~ ~-3 ~3 ~2 ~3 minecraft:oak_log hollow" >&3
+[ "${WALL:-1}" = "1" ] && echo "execute at @e[tag=naparnik,limit=1] run fill ~-3 ~ ~-3 ~3 ~2 ~3 minecraft:oak_log hollow" >&3
 sleep 2
-echo "execute if entity @e[type=minecraft:villager] run say ЖИТЕЛЬ В МИРЕ ЕСТЬ" >&3
+echo "execute if entity @e[tag=naparnik] run say НАПАРНИК В МИРЕ ЕСТЬ" >&3
 sleep 2
-echo "data get entity @e[type=minecraft:villager,limit=1] Pos" >&3
+echo "data get entity @e[tag=naparnik,limit=1] Pos" >&3
 sleep 2
 echo "naparnik speed ${SPEED:-1}" >&3
 sleep 1
