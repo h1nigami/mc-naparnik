@@ -19,6 +19,19 @@ loom {
 	}
 }
 
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "naparnik-test"
+		enableGameTests = false
+		enableClientGameTests = true
+	}
+}
+
+tasks.named("runClientGameTest") {
+	jvmArgs "-Duser.home=${layout.buildDirectory.dir('test-home').get().asFile}"
+}
+
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"

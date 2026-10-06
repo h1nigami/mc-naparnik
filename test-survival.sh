@@ -41,7 +41,7 @@ case "${MODE:-hunt}" in
     # пруд 5x7 глубиной 4 внутри арены, обоих напарников — на дно
     echo "fill 2 146 -3 6 149 3 minecraft:water" >&3
     sleep 1
-    echo "tp @e[type=minecraft:villager] 4.5 146 0.5" >&3 ;;
+    echo "tp @e[tag=naparnik] 4.5 146 0.5" >&3 ;;
 esac
 
 T=0

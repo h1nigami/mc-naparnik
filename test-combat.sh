@@ -15,8 +15,8 @@ echo "forceload add -32 -32 32 32" >&3; sleep 4
 echo "execute positioned 0.0 100.0 0.0 run naparnik spawn" >&3; sleep 3
 echo "naparnik control" >&3; sleep 2
 # зомби с одной стороны, корова с другой — обе в радиусе удара
-echo "execute at @e[type=minecraft:villager,limit=1] run summon minecraft:zombie ~2 ~ ~ {NoAI:1b,PersistenceRequired:1b}" >&3
-echo "execute at @e[type=minecraft:villager,limit=1] run summon minecraft:cow ~-2 ~ ~ {NoAI:1b}" >&3
+echo "execute at @e[tag=naparnik,limit=1] run summon minecraft:zombie ~2 ~ ~ {NoAI:1b,PersistenceRequired:1b}" >&3
+echo "execute at @e[tag=naparnik,limit=1] run summon minecraft:cow ~-2 ~ ~ {NoAI:1b}" >&3
 sleep 3
 echo "--- обзор до боя ---"
 cat naparnik-test/naparnik-view.txt 2>&1 | grep -E "цель|позиция|смотрит" || true
